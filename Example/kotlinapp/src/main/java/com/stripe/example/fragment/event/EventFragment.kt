@@ -143,6 +143,7 @@ class EventFragment : Fragment(), ReaderListener {
 
             override fun onFailure(e: TerminalException) {
                 this@EventFragment.onFailure(e)
+                collectPayment(this@EventFragment.paymentIntent!!)
             }
         }
     }
@@ -150,15 +151,7 @@ class EventFragment : Fragment(), ReaderListener {
     private val createPaymentIntentCallback by lazy {
         object : PaymentIntentCallback {
             override fun onSuccess(paymentIntent: PaymentIntent) {
-                val skipTipping = arguments?.getBoolean(SKIP_TIPPING) ?: false
-                val collectConfig = CollectConfiguration.Builder()
-                    .skipTipping(skipTipping)
-                    .build()
-                this@EventFragment.paymentIntent = paymentIntent
-                addEvent("Created PaymentIntent", "terminal.createPaymentIntent")
-                viewModel.collectTask = Terminal.getInstance().collectPaymentMethod(
-                    paymentIntent, collectPaymentMethodCallback, collectConfig
-                )
+                collectPayment(paymentIntent)
             }
 
             override fun onFailure(e: TerminalException) {
@@ -340,6 +333,18 @@ class EventFragment : Fragment(), ReaderListener {
 
     override fun onRequestReaderInput(options: ReaderInputOptions) {
         addEvent(options.toString(), "listener.onRequestReaderInput")
+    }
+
+    fun collectPayment(paymentIntent: PaymentIntent) {
+        val skipTipping = arguments?.getBoolean(SKIP_TIPPING) ?: false
+        val collectConfig = CollectConfiguration.Builder()
+            .skipTipping(skipTipping)
+            .build()
+        this.paymentIntent = paymentIntent
+        addEvent("Created PaymentIntent", "terminal.createPaymentIntent")
+        viewModel.collectTask = Terminal.getInstance().collectPaymentMethod(
+            paymentIntent, collectPaymentMethodCallback, collectConfig
+        )
     }
 
     fun completeFlow() {

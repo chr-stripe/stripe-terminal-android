@@ -173,25 +173,15 @@ public class EventFragment extends Fragment implements ReaderListener {
         @Override
         public void onFailure(@NotNull TerminalException e) {
             EventFragment.this.onFailure(e);
+            collectPayment(paymentIntent);
         }
     };
 
     @NotNull private final PaymentIntentCallback createPaymentIntentCallback = new PaymentIntentCallback() {
         @Override
         public void onSuccess(@NotNull PaymentIntent intent) {
-            paymentIntent = intent;
             addEvent("Created PaymentIntent", "terminal.createPaymentIntent");
-
-            final Bundle arguments = getArguments();
-            final boolean skipTipping = (arguments != null) && arguments.getBoolean(SKIP_TIPPING);
-            final CollectConfiguration collectConfig = new CollectConfiguration.Builder()
-                    .skipTipping(skipTipping)
-                    .setMoto(DO_NOT_ENABLE_MOTO)
-                    .setTippingConfiguration(
-                            new TippingConfiguration.Builder().build()
-                    ).build();
-            viewModel.collectTask = Terminal.getInstance().collectPaymentMethod(
-                    paymentIntent, collectPaymentMethodCallback, collectConfig);
+            collectPayment(intent);
         }
 
         @Override
@@ -379,6 +369,20 @@ public class EventFragment extends Fragment implements ReaderListener {
     @Override
     public void onRequestReaderInput(@NotNull ReaderInputOptions options) {
         addEvent(options.toString(), "listener.onRequestReaderInput");
+    }
+
+    private void collectPayment(PaymentIntent intent) {
+        paymentIntent = intent;
+        final Bundle arguments = getArguments();
+        final boolean skipTipping = (arguments != null) && arguments.getBoolean(SKIP_TIPPING);
+        final CollectConfiguration collectConfig = new CollectConfiguration.Builder()
+                .skipTipping(skipTipping)
+                .setMoto(DO_NOT_ENABLE_MOTO)
+                .setTippingConfiguration(
+                        new TippingConfiguration.Builder().build()
+                ).build();
+        viewModel.collectTask = Terminal.getInstance().collectPaymentMethod(
+                paymentIntent, collectPaymentMethodCallback, collectConfig);
     }
 
     private void completeFlow() {
